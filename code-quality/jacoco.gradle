@@ -21,9 +21,16 @@ project.afterEvaluate {
             }
             def testTaskName = "test${sourceName.capitalize()}UnitTest"
             def coverageTaskName = "${testTaskName}Coverage"
+            def instrumentationTestTaskName = "create${sourceName.capitalize()}CoverageReport"
 
             // Create coverage task of form 'testFlavorTypeUnitTestCoverage' depending on 'testFlavorTypeUnitTest'
-            task "${coverageTaskName}"(type: JacocoReport, dependsOn: "$testTaskName") {
+            task "${coverageTaskName}"(
+                    type: JacocoReport,
+                    dependsOn: [
+                            "$testTaskName",
+                            "$instrumentationTestTaskName"
+                    ]
+            ) {
                 group = 'Reporting'
                 description = "Generate Jacoco coverage reports for the ${sourceName.capitalize()} build."
 
@@ -65,7 +72,13 @@ project.afterEvaluate {
 
                 additionalSourceDirs = files(coverageSourceDirs)
                 sourceDirectories = files(coverageSourceDirs)
-                executionData = files("${project.buildDir}/jacoco/${testTaskName}.exec")
+
+                def codeCoverageDirName = productFlavorName.toString().toUpperCase()
+
+                executionData = fileTree(dir: "$buildDir", includes: [
+                        "jacoco/${testTaskName}.exec",
+                        "outputs/code-coverage/connected/flavors/${codeCoverageDirName}/*.ec"
+                ])
 
                 reports {
                     xml.enabled = true
